@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bhakti Reels</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        #splashScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #1a1205 0%, #000000 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.8s ease, visibility 0.8s;
+        }
+        .splash-logo {
+            width: 170px;
+            height: 170px;
+            border-radius: 35px;
+            box-shadow: 0 0 30px rgba(255, 153, 51, 0.45);
+            animation: popIn 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        .splash-loader {
+            margin-top: 35px;
+            width: 32px;
+            height: 32px;
+            border: 3px solid rgba(255, 153, 51, 0.2);
+            border-top: 3px solid #ff9933;
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+        .splash-tagline {
+            margin-top: 15px;
+            color: #ff9933;
+            font-size: 13px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 600;
+            opacity: 0.85;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.6); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .category-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 15px 10px;
+            z-index: 100;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.85), transparent);
+        }
+        .cat-btn {
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            position: relative;
+            padding-bottom: 4px;
+        }
+        .cat-btn.active {
+            color: #ff9933;
+        }
+        .cat-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #ff9933;
+            border-radius: 2px;
+        }
+
+        .reels-container {
+            width: 100%;
+            height: 100%;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scrollbar-width: none;
+        }
+        .reels-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .reel-item {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            scroll-snap-align: start;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #050505;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .center-play-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70px;
+            height: 70px;
+            background: rgba(0, 0, 0, 0.45);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            z-index: 40;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+        .center-play-icon svg {
+            width: 36px;
+            height: 36px;
+            fill: #ffffff;
+            margin-left: 4px;
+        }
+        .center-play-icon.hidden {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.7);
+        }
+
+        .action-bar {
+            position: absolute;
+            right: 15px;
+            bottom: 65px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            z-index: 50;
+        }
+
+        .download-btn {
+            background: linear-gradient(145deg, #00e676, #00b34d);
+            border: 2px solid #ffffff;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 18px rgba(0, 230, 118, 0.65);
+            cursor: pointer;
+            animation: bounceDown 1.4s infinite cubic-bezier(0.28, 0.84, 0.42, 1);
+        }
+        
+        .download-btn svg {
+            width: 28px;
+            height: 28px;
+            fill: #000000;
+        }
+
+        @keyframes bounceDown {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(12px); }
+            60% { transform: translateY(6px); }
+        }
+
+        .download-count {
+            color: #00e676;
+            font-size: 11px;
+            font-weight: 700;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.75);
+            padding: 3px 8px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 230, 118, 0.4);
+        }
+
+        #noInternetScreen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #121212;
+            color: #fff;
+            z-index: 1000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 25px;
+        }
+        #noInternetScreen button {
+            margin-top: 20px;
+            background: #ff9933;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: bold;
+            color: #000;
+        }
+
+        .center-msg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #888;
+            font-size: 14px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="splashScreen">
+        <img src="logo.png" alt="Bhakti Reels" class="splash-logo">
+        <div class="splash-loader"></div>
+        <div class="splash-tagline">॥ जय श्री राधे कृष्णा ॥</div>
+    </div>
+
+    <div class="category-bar">
+        <button class="cat-btn active" onclick="switchCategory('hanuman', this)">हनुमान जी</button>
+        <button class="cat-btn" onclick="switchCategory('krishna', this)">श्री कृष्णा</button>
+        <button class="cat-btn" onclick="switchCategory('shiv', this)">महादेव</button>
+    </div>
+
+    <div class="reels-container" id="reelsContainer">
+        <div class="center-msg" id="loadingMsg">रील्स लोड हो रही हैं...</div>
+    </div>
+
+    <div id="noInternetScreen">
+        <h2 style="color: #ff9933; margin-bottom: 8px;">⚠️ इंटरनेट बंद है</h2>
+        <p style="color: #aaa; font-size: 14px;">भक्ति रील्स देखने और डाउनलोड करने के लिए कृपया मोबाइल डेटा चालू करें।</p>
+        <button onclick="retryConnection()">फिर से कोशिश करें</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCBqWud_ocu8Mako8e_005BAwDBE9AAusI",
+            authDomain: "bhakti-reels-app.firebaseapp.com",
+            projectId: "bhakti-reels-app",
+            storageBucket: "bhakti-reels-app.firebasestorage.app",
+            messagingSenderId: "23834083510",
+            appId: "1:23834083510:web:c8e6196a4e44c9628de617",
+            measurementId: "G-PGXJBPEY8D"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const splash = document.getElementById('splashScreen');
+                if (splash) {
+                    splash.style.opacity = '0';
+                    setTimeout(() => {
+                        splash.style.display = 'none';
+                    }, 800);
+                }
+            }, 2500);
+        });
+
+        if (localStorage.getItem('download_balance') === null) {
+            localStorage.setItem('download_balance', '4');
+        }
+
+        const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+        let currentCategory = 'hanuman';
+
+        window.switchCategory = function(cat, btn) {
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentCategory = cat;
+            fetchVideos(cat);
+        };
+
+        async function fetchVideos(cat) {
+            const container = document.getElementById('reelsContainer');
+            container.innerHTML = '<div class="center-msg">रील्स लोड हो रही हैं...</div>';
+
+            try {
+                const q = query(
+                    collection(db, "videos"),
+                    where("category", "==", cat)
+                );
+                const snapshot = await getDocs(q);
+
+                if (snapshot.empty) {
+                    container.innerHTML = '<div class="center-msg">इस श्रेणी में अभी कोई रील नहीं है।</div>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    createReelElement(data.url);
+                });
+
+                setupVideoObserver();
+            } catch (err) {
+                console.error(err);
+                container.innerHTML = '<div class="center-msg">रील्स लोड करने में समस्या आई।</div>';
+            }
+        }
+
+        function createReelElement(videoUrl) {
+            const container = document.getElementById('reelsContainer');
+            const reel = document.createElement('div');
+            reel.className = 'reel-item';
+
+            const bal = localStorage.getItem('download_balance');
+
+            reel.innerHTML = `
+                <video loop playsinline preload="metadata">
+                    <source src="${videoUrl}" type="video/mp4">
+                </video>
+                <div class="center-play-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                </div>
+                <div class="action-bar">
+                    <button class="download-btn" onclick="handleDownload('${videoUrl}')">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/>
+                        </svg>
+                    </button>
+                    <div class="download-count">बैलेंस: ${bal}</div>
+                </div>
+            `;
+
+            const vid = reel.querySelector('video');
+            const playIcon = reel.querySelector('.center-play-icon');
+
+            vid.addEventListener('play', () => {
+                playIcon.classList.add('hidden');
+            });
+
+            vid.addEventListener('pause', () => {
+                playIcon.classList.remove('hidden');
+            });
+
+            vid.addEventListener('click', function() {
+                if (this.paused) {
+                    this.play().catch(() => {});
+                } else {
+                    this.pause();
+                }
+            });
+
+            container.appendChild(reel);
+        }
+
+        function setupVideoObserver() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const vid = entry.target.querySelector('video');
+                    const playIcon = entry.target.querySelector('.center-play-icon');
+
+                    if (entry.isIntersecting) {
+                        vid.play().then(() => {
+                            if (playIcon) playIcon.classList.add('hidden');
+                        }).catch(() => {
+                            if (playIcon) playIcon.classList.remove('hidden');
+                        });
+                    } else {
+                        vid.pause();
+                        if (playIcon) playIcon.classList.remove('hidden');
+                    }
+                });
+            }, { threshold: 0.6 });
+
+            document.querySelectorAll('.reel-item').forEach(item => observer.observe(item));
+        }
+
+        window.handleDownload = async function(url) {
+            let balance = parseInt(localStorage.getItem('download_balance') || '0', 10);
+
+            if (balance > 0) {
+                balance -= 1;
+                localStorage.setItem('download_balance', balance.toString());
+                updateBalanceUI();
+                startFileDownload(url);
+                alert(`वीडियो डाउनलोड शुरू हो गया! शेष मुफ़्त डाउनलोड: ${balance}`);
+            } else {
+                const nextAdAvailableTime = parseInt(localStorage.getItem('next_ad_time') || '0', 10);
+                const currentTime = Date.now();
+
+                if (currentTime < nextAdAvailableTime) {
+                    const remainingMs = nextAdAvailableTime - currentTime;
+                    const remHours = Math.floor(remainingMs / (1000 * 60 * 60));
+                    const remMinutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+
+                    alert(`आपके डाउनलोड समाप्त हो चुके हैं!\nअगले 4 डाउनलोड के लिए विज्ञापन अनलॉक होने में समय बाकी है:\n⏳ ${remHours} घंटे ${remMinutes} मिनट।`);
+                } else {
+                    const watch = confirm("आपके 4 डाउनलोड समाप्त हो चुके हैं!\nअगले 4 डाउनलोड अनलॉक करने के लिए एक छोटा विज्ञापन देखें?");
+                    if (watch) {
+                        triggerAdMobRewardedAd(url);
+                    }
+                }
+            }
+        };
+
+        async function triggerAdMobRewardedAd(videoUrl) {
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AdMob) {
+                const { AdMob } = window.Capacitor.Plugins;
+                try {
+                    const adOptions = {
+                        adId: "ca-app-pub-6302105448775587/9570692629",
+                        isTesting: false
+                    };
+
+                    await AdMob.prepareRewardVideoAd(adOptions);
+                    const rewardResult = await AdMob.showRewardVideoAd();
+
+                    if (rewardResult) {
+                        unlockDownloads(videoUrl);
+                    }
+                } catch (e) {
+                    console.error("Ad error: ", e);
+                    alert("विज्ञापन लोड करने में समस्या आई। कृपया इंटरनेट चेक करें।");
+                }
+            } else {
+                alert("विज्ञापन सफलतापूर्वक पूरा देखा गया! आपको 4 नए डाउनलोड मिल गए।");
+                unlockDownloads(videoUrl);
+            }
+        }
+
+        function unlockDownloads(videoUrl) {
+            localStorage.setItem('download_balance', '3');
+            const nextTime = Date.now() + SIX_HOURS_MS;
+            localStorage.setItem('next_ad_time', nextTime.toString());
+
+            updateBalanceUI();
+            startFileDownload(videoUrl);
+            alert("बधाई हो! आपको 4 डाउनलोड अनलॉक हो गए हैं (1 अभी डाउनलोड हो गया, 3 बाकी हैं)।");
+        }
+
+        function startFileDownload(url) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `BhaktiReel_${Date.now()}.mp4`;
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function updateBalanceUI() {
+            const bal = localStorage.getItem('download_balance');
+            document.querySelectorAll('.download-count').forEach(el => {
+                el.innerText = `बैलेंस: ${bal}`;
+            });
+        }
+
+        function checkNetwork() {
+            const screen = document.getElementById('noInternetScreen');
+            if (!navigator.onLine) {
+                screen.style.display = 'flex';
+            } else {
+                screen.style.display = 'none';
+            }
+        }
+        window.addEventListener('online', checkNetwork);
+        window.addEventListener('offline', checkNetwork);
+        window.retryConnection = function() {
+            if (navigator.onLine) {
+                checkNetwork();
+                fetchVideos(currentCategory);
+            } else {
+                alert("कृपया पहले मोबाइल डेटा चालू करें!");
+            }
+        };
+
+        checkNetwork();
+        fetchVideos('hanuman');
+    </script>
+</body>
+</html>
