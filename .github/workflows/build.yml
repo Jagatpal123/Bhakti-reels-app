@@ -39,21 +39,33 @@ jobs:
           META_DATA='<meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-6302105448775587~2959860271"/>'
           sed -i "/<\/application>/i \        $META_DATA" $MANIFEST
 
-      - name: Force Generate App Icons
+      - name: Overwrite Icons and Delete Adaptive XMLs
         run: |
-          if [ -f "www/logo.png" ]; then
-            RES_DIR="android/app/src/main/res"
-            convert www/logo.png -resize 48x48 $RES_DIR/mipmap-mdpi/ic_launcher.png
-            convert www/logo.png -resize 48x48 $RES_DIR/mipmap-mdpi/ic_launcher_round.png
-            convert www/logo.png -resize 72x72 $RES_DIR/mipmap-hdpi/ic_launcher.png
-            convert www/logo.png -resize 72x72 $RES_DIR/mipmap-hdpi/ic_launcher_round.png
-            convert www/logo.png -resize 96x96 $RES_DIR/mipmap-xhdpi/ic_launcher.png
-            convert www/logo.png -resize 96x96 $RES_DIR/mipmap-xhdpi/ic_launcher_round.png
-            convert www/logo.png -resize 144x144 $RES_DIR/mipmap-xxhdpi/ic_launcher.png
-            convert www/logo.png -resize 144x144 $RES_DIR/mipmap-xxhdpi/ic_launcher_round.png
-            convert www/logo.png -resize 192x192 $RES_DIR/mipmap-xxxhdpi/ic_launcher.png
-            convert www/logo.png -resize 192x192 $RES_DIR/mipmap-xxxhdpi/ic_launcher_round.png
-          fi
+          RES_DIR="android/app/src/main/res"
+
+          # Delete anydpi adaptive XMLs so Android is forced to use our PNG directly
+          rm -rf $RES_DIR/mipmap-anydpi-v26
+
+          # Generate direct launcher and round PNGs
+          convert www/logo.png -resize 48x48 $RES_DIR/mipmap-mdpi/ic_launcher.png
+          convert www/logo.png -resize 48x48 $RES_DIR/mipmap-mdpi/ic_launcher_round.png
+          convert www/logo.png -resize 48x48 $RES_DIR/mipmap-mdpi/ic_launcher_foreground.png
+
+          convert www/logo.png -resize 72x72 $RES_DIR/mipmap-hdpi/ic_launcher.png
+          convert www/logo.png -resize 72x72 $RES_DIR/mipmap-hdpi/ic_launcher_round.png
+          convert www/logo.png -resize 72x72 $RES_DIR/mipmap-hdpi/ic_launcher_foreground.png
+
+          convert www/logo.png -resize 96x96 $RES_DIR/mipmap-xhdpi/ic_launcher.png
+          convert www/logo.png -resize 96x96 $RES_DIR/mipmap-xhdpi/ic_launcher_round.png
+          convert www/logo.png -resize 96x96 $RES_DIR/mipmap-xhdpi/ic_launcher_foreground.png
+
+          convert www/logo.png -resize 144x144 $RES_DIR/mipmap-xxhdpi/ic_launcher.png
+          convert www/logo.png -resize 144x144 $RES_DIR/mipmap-xxhdpi/ic_launcher_round.png
+          convert www/logo.png -resize 144x144 $RES_DIR/mipmap-xxhdpi/ic_launcher_foreground.png
+
+          convert www/logo.png -resize 192x192 $RES_DIR/mipmap-xxxhdpi/ic_launcher.png
+          convert www/logo.png -resize 192x192 $RES_DIR/mipmap-xxxhdpi/ic_launcher_round.png
+          convert www/logo.png -resize 192x192 $RES_DIR/mipmap-xxxhdpi/ic_launcher_foreground.png
 
       - name: Build Android Debug APK
         run: |
