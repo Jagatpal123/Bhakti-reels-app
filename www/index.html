@@ -287,6 +287,25 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // AdMob IDs
+        const REAL_AD_ID = "ca-app-pub-6302105448775587/9570692629";
+        const TEST_AD_ID = "ca-app-pub-3940256099942544/5224354917"; // fallback if real ad not ready yet
+
+        // Initialize AdMob on Startup
+        async function initAdMob() {
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AdMob) {
+                try {
+                    await window.Capacitor.Plugins.AdMob.initialize({
+                        requestTrackingAuthorization: true,
+                        initializeForTesting: true
+                    });
+                } catch (e) {
+                    console.error("AdMob Init error: ", e);
+                }
+            }
+        }
+        initAdMob();
+
         window.addEventListener('load', () => {
             setTimeout(() => {
                 const splash = document.getElementById('splashScreen');
@@ -444,23 +463,25 @@
             if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AdMob) {
                 const { AdMob } = window.Capacitor.Plugins;
                 try {
-                    const adOptions = {
-                        adId: "ca-app-pub-6302105448775587/9570692629",
-                        isTesting: false
-                    };
+                    // Try Real Ad first
+                    try {
+                        await AdMob.prepareRewardVideoAd({ adId: REAL_AD_ID, isTesting: false });
+                    } catch (e1) {
+                        // Fallback to Test Ad if account is new & pending review
+                        console.warn("Real ad failed, using test ad:", e1);
+                        await AdMob.prepareRewardVideoAd({ adId: TEST_AD_ID, isTesting: true });
+                    }
 
-                    await AdMob.prepareRewardVideoAd(adOptions);
                     const rewardResult = await AdMob.showRewardVideoAd();
-
                     if (rewardResult) {
                         unlockDownloads(videoUrl);
                     }
                 } catch (e) {
-                    console.error("Ad error: ", e);
-                    alert("विज्ञापन लोड करने में समस्या आई। कृपया इंटरनेट चेक करें।");
+                    console.error("Ad playback error: ", e);
+                    alert("विज्ञापन लोड नहीं हो पाया। कृपया 10 सेकंड बाद पुनः प्रयास करें।");
                 }
             } else {
-                alert("विज्ञापन सफलतापूर्वक पूरा देखा गया! आपको 4 नए डाउनलोड मिल गए।");
+                alert("विज्ञापन देखा गया! 4 डाउनलोड अनलॉक हो गए।");
                 unlockDownloads(videoUrl);
             }
         }
