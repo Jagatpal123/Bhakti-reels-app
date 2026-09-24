@@ -254,6 +254,66 @@
             font-size: 14px;
             text-align: center;
         }
+
+        /* Custom Exit Confirmation Modal */
+        #exitModalOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(5px);
+            z-index: 99999;
+            justify-content: center;
+            align-items: center;
+        }
+        .exit-modal-box {
+            background: #1e1e1e;
+            border: 1px solid #ff9933;
+            border-radius: 20px;
+            padding: 24px;
+            width: 85%;
+            max-width: 320px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            animation: popIn 0.3s ease-out;
+        }
+        .exit-modal-title {
+            color: #ff9933;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        .exit-modal-desc {
+            color: #dddddd;
+            font-size: 14px;
+            margin-bottom: 22px;
+            line-height: 1.4;
+        }
+        .exit-modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        .exit-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+        }
+        .exit-btn-cancel {
+            background: #333333;
+            color: #ffffff;
+        }
+        .exit-btn-confirm {
+            background: linear-gradient(145deg, #ff4444, #cc0000);
+            color: #ffffff;
+        }
     </style>
 </head>
 <body>
@@ -278,6 +338,18 @@
         <h2 style="color: #ff9933; margin-bottom: 8px;">⚠️ इंटरनेट बंद है</h2>
         <p style="color: #aaa; font-size: 14px;">भक्ति रील्स देखने और डाउनलोड करने के लिए कृपया मोबाइल डेटा चालू करें।</p>
         <button onclick="retryConnection()">फिर से कोशिश करें</button>
+    </div>
+
+    <!-- Exit Confirmation Modal Dialog -->
+    <div id="exitModalOverlay">
+        <div class="exit-modal-box">
+            <div class="exit-modal-title">बाहर निकलें?</div>
+            <div class="exit-modal-desc">क्या आप भक्ति रील्स ऐप से बाहर जाना चाहते हैं?</div>
+            <div class="exit-modal-actions">
+                <button class="exit-btn exit-btn-cancel" onclick="dismissExitModal()">नहीं</button>
+                <button class="exit-btn exit-btn-confirm" onclick="confirmExitApp()">हाँ</button>
+            </div>
+        </div>
     </div>
 
     <script type="module">
@@ -315,19 +387,53 @@
         }
         initAdMob();
 
-        // Android Hardware Back Button Handler
-        async function setupBackButton() {
+        // Modal Controls
+        window.showExitModal = function() {
+            const modal = document.getElementById('exitModalOverlay');
+            if (modal) modal.style.display = 'flex';
+        };
+
+        window.dismissExitModal = function() {
+            const modal = document.getElementById('exitModalOverlay');
+            if (modal) modal.style.display = 'none';
+        };
+
+        window.confirmExitApp = function() {
             if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-                const { App } = window.Capacitor.Plugins;
-                App.addListener('backButton', () => {
-                    const confirmExit = confirm("क्या आप ऐप से बाहर जाना चाहते हैं?");
-                    if (confirmExit) {
-                        App.exitApp();
+                window.Capacitor.Plugins.App.exitApp();
+            } else if (navigator.app && navigator.app.exitApp) {
+                navigator.app.exitApp();
+            } else {
+                window.close();
+            }
+        };
+
+        // Hardware Back Button Interception
+        function setupBackHandlers() {
+            // Capacitor Back Button Listener
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+                window.Capacitor.Plugins.App.addListener('backButton', () => {
+                    const modal = document.getElementById('exitModalOverlay');
+                    if (modal && modal.style.display === 'flex') {
+                        dismissExitModal();
+                    } else {
+                        showExitModal();
                     }
                 });
             }
+
+            // Standard Cordova/Capacitor Document Listener Fallback
+            document.addEventListener('backbutton', function(e) {
+                e.preventDefault();
+                const modal = document.getElementById('exitModalOverlay');
+                if (modal && modal.style.display === 'flex') {
+                    dismissExitModal();
+                } else {
+                    showExitModal();
+                }
+            }, false);
         }
-        setupBackButton();
+        setupBackHandlers();
 
         window.addEventListener('load', () => {
             setTimeout(() => {
@@ -481,95 +587,4 @@
                 startFileDownload(url);
                 alert(`वीडियो डाउनलोड शुरू हो गया! शेष डाउनलोड: ${balance}`);
             } else {
-                const nextAdAvailableTime = parseInt(localStorage.getItem('next_ad_time') || '0', 10);
-                const currentTime = Date.now();
-
-                if (nextAdAvailableTime > 0 && currentTime < nextAdAvailableTime) {
-                    const remainingMs = nextAdAvailableTime - currentTime;
-                    const remMinutes = Math.ceil(remainingMs / (1000 * 60));
-
-                    alert(`आपके 3 डाउनलोड समाप्त हो चुके हैं!\nअगले 3 डाउनलोड के लिए विज्ञापन अनलॉक होने में समय बाकी है:\n⏳ ${remMinutes} मिनट।`);
-                } else {
-                    const watch = confirm("3 फ्री डाउनलोड अनलॉक करने के लिए एक छोटा विज्ञापन देखें?");
-                    if (watch) {
-                        triggerAdMobRewardedAd(url);
-                    }
-                }
-            }
-        };
-
-        async function triggerAdMobRewardedAd(videoUrl) {
-            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AdMob) {
-                const { AdMob } = window.Capacitor.Plugins;
-                try {
-                    await AdMob.prepareRewardVideoAd({
-                        adId: TEST_AD_ID,
-                        isTesting: true
-                    });
-
-                    const rewardResult = await AdMob.showRewardVideoAd();
-                    if (rewardResult) {
-                        unlockDownloads(videoUrl);
-                    }
-                } catch (e) {
-                    console.error("Ad playback error: ", e);
-                    alert("विज्ञापन लोड नहीं हो सका। कृपया नेटवर्क चेक करें।");
-                }
-            } else {
-                alert("विज्ञापन पूरा हुआ! 3 डाउनलोड अनलॉक हो गए।");
-                unlockDownloads(videoUrl);
-            }
-        }
-
-        function unlockDownloads(videoUrl) {
-            // 1 current video download + 2 balance me = Total 3 downloads
-            localStorage.setItem('download_balance', '2');
-            const nextTime = Date.now() + ONE_HOUR_MS;
-            localStorage.setItem('next_ad_time', nextTime.toString());
-
-            updateBadgeUI();
-            startFileDownload(videoUrl);
-            alert("बधाई हो! आपको 3 डाउनलोड अनलॉक हो गए हैं। यह वीडियो डाउनलोड हो रहा है और 2 डाउनलोड शेष हैं।");
-        }
-
-        function startFileDownload(url) {
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `BhaktiReel_${Date.now()}.mp4`;
-            a.target = '_blank';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-
-        function updateBadgeUI() {
-            const text = getBadgeText();
-            document.querySelectorAll('.download-promo-badge').forEach(el => {
-                el.innerText = text;
-            });
-        }
-
-        function checkNetwork() {
-            const screen = document.getElementById('noInternetScreen');
-            if (!navigator.onLine) {
-                screen.style.display = 'flex';
-            } else {
-                screen.style.display = 'none';
-            }
-        }
-        window.addEventListener('online', checkNetwork);
-        window.addEventListener('offline', checkNetwork);
-        window.retryConnection = function() {
-            if (navigator.onLine) {
-                checkNetwork();
-                fetchVideos(currentCategory);
-            } else {
-                alert("कृपया पहले मोबाइल डेटा चालू करें!");
-            }
-        };
-
-        checkNetwork();
-        fetchVideos('hanuman');
-    </script>
-</body>
-</html>
+                const nextAdAvailableTime = parseInt(localStorage.getItem('next_ad_time') || 
