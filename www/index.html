@@ -172,7 +172,6 @@
             z-index: 50;
         }
 
-        /* 4 Downloads Free Banner Prompt */
         .download-promo-badge {
             background: rgba(0, 0, 0, 0.85);
             color: #00e676;
@@ -300,7 +299,7 @@
 
         // AdMob IDs
         const REAL_AD_ID = "ca-app-pub-6302105448775587/9570692629";
-        const TEST_AD_ID = "ca-app-pub-3940256099942544/5224354917"; // Safe fallback
+        const TEST_AD_ID = "ca-app-pub-3940256099942544/5224354917";
 
         async function initAdMob() {
             if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AdMob) {
@@ -316,6 +315,20 @@
         }
         initAdMob();
 
+        // Android Hardware Back Button Handler
+        async function setupBackButton() {
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+                const { App } = window.Capacitor.Plugins;
+                App.addListener('backButton', () => {
+                    const confirmExit = confirm("क्या आप ऐप से बाहर जाना चाहते हैं?");
+                    if (confirmExit) {
+                        App.exitApp();
+                    }
+                });
+            }
+        }
+        setupBackButton();
+
         window.addEventListener('load', () => {
             setTimeout(() => {
                 const splash = document.getElementById('splashScreen');
@@ -328,7 +341,6 @@
             }, 2500);
         });
 
-        // Initial balance starts at 0 so first click triggers ad & unlocks 4 downloads
         if (localStorage.getItem('download_balance') === null) {
             localStorage.setItem('download_balance', '0');
         }
@@ -472,7 +484,6 @@
                 const nextAdAvailableTime = parseInt(localStorage.getItem('next_ad_time') || '0', 10);
                 const currentTime = Date.now();
 
-                // 6 ghante ka cooldown check
                 if (nextAdAvailableTime > 0 && currentTime < nextAdAvailableTime) {
                     const remainingMs = nextAdAvailableTime - currentTime;
                     const remHours = Math.floor(remainingMs / (1000 * 60 * 60));
@@ -492,13 +503,10 @@
             if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AdMob) {
                 const { AdMob } = window.Capacitor.Plugins;
                 try {
-                    // Real ad attempt
-                    try {
-                        await AdMob.prepareRewardVideoAd({ adId: REAL_AD_ID, isTesting: false });
-                    } catch (e1) {
-                        console.warn("Real ad failed, fallback to test ad", e1);
-                        await AdMob.prepareRewardVideoAd({ adId: TEST_AD_ID, isTesting: true });
-                    }
+                    await AdMob.prepareRewardVideoAd({
+                        adId: TEST_AD_ID,
+                        isTesting: true
+                    });
 
                     const rewardResult = await AdMob.showRewardVideoAd();
                     if (rewardResult) {
@@ -515,10 +523,7 @@
         }
 
         function unlockDownloads(videoUrl) {
-            // 1 abhi download ho jayega aur 3 balance mein add honge (Total 4)
             localStorage.setItem('download_balance', '3');
-            
-            // 6 ghante ka cooldown timer set karein
             const nextTime = Date.now() + SIX_HOURS_MS;
             localStorage.setItem('next_ad_time', nextTime.toString());
 
