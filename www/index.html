@@ -32,17 +32,16 @@
             justify-content: center;
             align-items: center;
             z-index: 9999;
-            transition: opacity 0.8s ease, visibility 0.8s;
+            transition: opacity 0.6s ease;
         }
         .splash-logo {
-            width: 170px;
-            height: 170px;
+            width: 160px;
+            height: 160px;
             border-radius: 35px;
             box-shadow: 0 0 30px rgba(255, 153, 51, 0.45);
-            animation: popIn 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
         .splash-loader {
-            margin-top: 35px;
+            margin-top: 30px;
             width: 32px;
             height: 32px;
             border: 3px solid rgba(255, 153, 51, 0.2);
@@ -60,10 +59,6 @@
             opacity: 0.85;
         }
 
-        @keyframes popIn {
-            0% { transform: scale(0.6); opacity: 1; }
-            100% { transform: scale(1); opacity: 1; }
-        }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -255,7 +250,7 @@
             text-align: center;
         }
 
-        /* Custom Exit Confirmation Modal */
+        /* Exit Confirmation Modal */
         #exitModalOverlay {
             display: none;
             position: fixed;
@@ -263,33 +258,32 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(5px);
-            z-index: 99999;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 100000;
             justify-content: center;
             align-items: center;
         }
         .exit-modal-box {
-            background: #1e1e1e;
+            background: #1c1c1e;
             border: 1px solid #ff9933;
-            border-radius: 20px;
-            padding: 24px;
-            width: 85%;
+            border-radius: 18px;
+            padding: 22px;
+            width: 82%;
             max-width: 320px;
             text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-            animation: popIn 0.3s ease-out;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.9);
         }
         .exit-modal-title {
             color: #ff9933;
-            font-size: 18px;
+            font-size: 19px;
             font-weight: bold;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
         .exit-modal-desc {
-            color: #dddddd;
+            color: #eeeeee;
             font-size: 14px;
-            margin-bottom: 22px;
+            margin-bottom: 20px;
             line-height: 1.4;
         }
         .exit-modal-actions {
@@ -300,14 +294,14 @@
         .exit-btn {
             flex: 1;
             padding: 12px;
-            border-radius: 12px;
+            border-radius: 10px;
             font-size: 14px;
             font-weight: bold;
             cursor: pointer;
             border: none;
         }
         .exit-btn-cancel {
-            background: #333333;
+            background: #2c2c2e;
             color: #ffffff;
         }
         .exit-btn-confirm {
@@ -352,6 +346,65 @@
         </div>
     </div>
 
+    <!-- Regular Script for Splash & Back Handler (Guaranteed Execution) -->
+    <script>
+        // 1. Splash Screen Auto Hide (Guaranteed after 2.2 seconds)
+        function hideSplashScreen() {
+            var splash = document.getElementById('splashScreen');
+            if (splash && splash.style.display !== 'none') {
+                splash.style.opacity = '0';
+                setTimeout(function() {
+                    splash.style.display = 'none';
+                }, 600);
+            }
+        }
+        setTimeout(hideSplashScreen, 2200);
+
+        // 2. Modal Functions
+        function showExitModal() {
+            var modal = document.getElementById('exitModalOverlay');
+            if (modal) modal.style.display = 'flex';
+        }
+        function dismissExitModal() {
+            var modal = document.getElementById('exitModalOverlay');
+            if (modal) modal.style.display = 'none';
+        }
+        function confirmExitApp() {
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+                window.Capacitor.Plugins.App.exitApp();
+            } else if (navigator.app && navigator.app.exitApp) {
+                navigator.app.exitApp();
+            }
+        }
+
+        // 3. Android Back Button Interceptor
+        function registerBackButton() {
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+                window.Capacitor.Plugins.App.addListener('backButton', function() {
+                    var modal = document.getElementById('exitModalOverlay');
+                    if (modal && modal.style.display === 'flex') {
+                        dismissExitModal();
+                    } else {
+                        showExitModal();
+                    }
+                });
+            }
+            document.addEventListener('backbutton', function(e) {
+                e.preventDefault();
+                var modal = document.getElementById('exitModalOverlay');
+                if (modal && modal.style.display === 'flex') {
+                    dismissExitModal();
+                } else {
+                    showExitModal();
+                }
+            }, false);
+        }
+
+        // Run after Capacitor initializes
+        setTimeout(registerBackButton, 1000);
+    </script>
+
+    <!-- Main Firebase & AdMob Module -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -369,8 +422,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // AdMob IDs
-        const REAL_AD_ID = "ca-app-pub-6302105448775587/9570692629";
         const TEST_AD_ID = "ca-app-pub-3940256099942544/5224354917";
 
         async function initAdMob() {
@@ -387,71 +438,10 @@
         }
         initAdMob();
 
-        // Modal Controls
-        window.showExitModal = function() {
-            const modal = document.getElementById('exitModalOverlay');
-            if (modal) modal.style.display = 'flex';
-        };
-
-        window.dismissExitModal = function() {
-            const modal = document.getElementById('exitModalOverlay');
-            if (modal) modal.style.display = 'none';
-        };
-
-        window.confirmExitApp = function() {
-            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-                window.Capacitor.Plugins.App.exitApp();
-            } else if (navigator.app && navigator.app.exitApp) {
-                navigator.app.exitApp();
-            } else {
-                window.close();
-            }
-        };
-
-        // Hardware Back Button Interception
-        function setupBackHandlers() {
-            // Capacitor Back Button Listener
-            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-                window.Capacitor.Plugins.App.addListener('backButton', () => {
-                    const modal = document.getElementById('exitModalOverlay');
-                    if (modal && modal.style.display === 'flex') {
-                        dismissExitModal();
-                    } else {
-                        showExitModal();
-                    }
-                });
-            }
-
-            // Standard Cordova/Capacitor Document Listener Fallback
-            document.addEventListener('backbutton', function(e) {
-                e.preventDefault();
-                const modal = document.getElementById('exitModalOverlay');
-                if (modal && modal.style.display === 'flex') {
-                    dismissExitModal();
-                } else {
-                    showExitModal();
-                }
-            }, false);
-        }
-        setupBackHandlers();
-
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                const splash = document.getElementById('splashScreen');
-                if (splash) {
-                    splash.style.opacity = '0';
-                    setTimeout(() => {
-                        splash.style.display = 'none';
-                    }, 800);
-                }
-            }, 2500);
-        });
-
         if (localStorage.getItem('download_balance') === null) {
             localStorage.setItem('download_balance', '0');
         }
 
-        // 1 ghante ka cooldown time (1 Hour = 60 * 60 * 1000 ms)
         const ONE_HOUR_MS = 1 * 60 * 60 * 1000;
         let currentCategory = 'hanuman';
 
@@ -587,4 +577,94 @@
                 startFileDownload(url);
                 alert(`वीडियो डाउनलोड शुरू हो गया! शेष डाउनलोड: ${balance}`);
             } else {
-                const nextAdAvailableTime = parseInt(localStorage.getItem('next_ad_time') || 
+                const nextAdAvailableTime = parseInt(localStorage.getItem('next_ad_time') || '0', 10);
+                const currentTime = Date.now();
+
+                if (nextAdAvailableTime > 0 && currentTime < nextAdAvailableTime) {
+                    const remainingMs = nextAdAvailableTime - currentTime;
+                    const remMinutes = Math.ceil(remainingMs / (1000 * 60));
+
+                    alert(`आपके 3 डाउनलोड समाप्त हो चुके हैं!\nअगले 3 डाउनलोड के लिए विज्ञापन अनलॉक होने में समय बाकी है:\n⏳ ${remMinutes} मिनट।`);
+                } else {
+                    const watch = confirm("3 फ्री डाउनलोड अनलॉक करने के लिए एक छोटा विज्ञापन देखें?");
+                    if (watch) {
+                        triggerAdMobRewardedAd(url);
+                    }
+                }
+            }
+        };
+
+        async function triggerAdMobRewardedAd(videoUrl) {
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AdMob) {
+                const { AdMob } = window.Capacitor.Plugins;
+                try {
+                    await AdMob.prepareRewardVideoAd({
+                        adId: TEST_AD_ID,
+                        isTesting: true
+                    });
+
+                    const rewardResult = await AdMob.showRewardVideoAd();
+                    if (rewardResult) {
+                        unlockDownloads(videoUrl);
+                    }
+                } catch (e) {
+                    console.error("Ad playback error: ", e);
+                    alert("विज्ञापन लोड नहीं हो सका। कृपया नेटवर्क चेक करें।");
+                }
+            } else {
+                alert("विज्ञापन पूरा हुआ! 3 डाउनलोड अनलॉक हो गए।");
+                unlockDownloads(videoUrl);
+            }
+        }
+
+        function unlockDownloads(videoUrl) {
+            localStorage.setItem('download_balance', '2');
+            const nextTime = Date.now() + ONE_HOUR_MS;
+            localStorage.setItem('next_ad_time', nextTime.toString());
+
+            updateBadgeUI();
+            startFileDownload(videoUrl);
+            alert("बधाई हो! आपको 3 डाउनलोड अनलॉक हो गए हैं। यह वीडियो डाउनलोड हो रहा है और 2 डाउनलोड शेष हैं।");
+        }
+
+        function startFileDownload(url) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `BhaktiReel_${Date.now()}.mp4`;
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function updateBadgeUI() {
+            const text = getBadgeText();
+            document.querySelectorAll('.download-promo-badge').forEach(el => {
+                el.innerText = text;
+            });
+        }
+
+        function checkNetwork() {
+            const screen = document.getElementById('noInternetScreen');
+            if (!navigator.onLine) {
+                screen.style.display = 'flex';
+            } else {
+                screen.style.display = 'none';
+            }
+        }
+        window.addEventListener('online', checkNetwork);
+        window.addEventListener('offline', checkNetwork);
+        window.retryConnection = function() {
+            if (navigator.onLine) {
+                checkNetwork();
+                fetchVideos(currentCategory);
+            } else {
+                alert("कृपया पहले मोबाइल डेटा चालू करें!");
+            }
+        };
+
+        checkNetwork();
+        fetchVideos('hanuman');
+    </script>
+</body>
+</html>
