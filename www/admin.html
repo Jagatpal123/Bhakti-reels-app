@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bhakti Reels - Admin Upload</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 480px;
+            background: #1e1e1e;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        h2 {
+            color: #ff9933;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        label {
+            display: block;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #ccc;
+        }
+        select, input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: #2a2a2a;
+            color: #fff;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            margin-top: 24px;
+            background: linear-gradient(145deg, #ff9933, #e67e00);
+            border: none;
+            border-radius: 25px;
+            color: #000;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 14px;
+            text-align: center;
+            color: #00e676;
+        }
+        .progress-box {
+            display: none;
+            width: 100%;
+            background: #333;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+        .progress-bar {
+            width: 0%;
+            height: 12px;
+            background: #00e676;
+            transition: width 0.2s;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>भक्ति रील्स अपलोड</h2>
+
+    <label for="category">श्रेणी (Category) चुनें:</label>
+    <select id="category">
+        <option value="hanuman">हनुमान जी (Hanuman)</option>
+        <option value="krishna">श्री कृष्णा (Krishna)</option>
+        <option value="shiv">महादेव (Shiv)</option>
+    </select>
+
+    <label for="videoFile">गैलरी से वीडियो चुनें (MP4):</label>
+    <input type="file" id="videoFile" accept="video/mp4,video/*">
+
+    <div class="progress-box" id="progressBox">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <button id="uploadBtn" onclick="startUpload()">अपलोड करें</button>
+    <div id="status"></div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCBqWud_ocu8Mako8e_005BAwDBE9AAusI",
+        authDomain: "bhakti-reels-app.firebaseapp.com",
+        projectId: "bhakti-reels-app",
+        storageBucket: "bhakti-reels-app.firebasestorage.app",
+        messagingSenderId: "23834083510",
+        appId: "1:23834083510:web:c8e6196a4e44c9628de617",
+        measurementId: "G-PGXJBPEY8D"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const CLOUDINARY_CLOUD_NAME = "technical-nishad";
+    const CLOUDINARY_UPLOAD_PRESET = "BhaktiReels";
+
+    window.startUpload = async function() {
+        const fileInput = document.getElementById('videoFile');
+        const category = document.getElementById('category').value;
+        const status = document.getElementById('status');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const progressBox = document.getElementById('progressBox');
+        const progressBar = document.getElementById('progressBar');
+
+        if (!fileInput.files || fileInput.files.length === 0) {
+            alert("कृपया पहले एक वीडियो चुनें!");
+            return;
+        }
+
+        const file = fileInput.files[0];
+        uploadBtn.disabled = true;
+        progressBox.style.display = 'block';
+        progressBar.style.width = '0%';
+        status.style.color = '#ff9933';
+        status.innerText = "Cloudinary पर अपलोड हो रहा है...";
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+        try {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`, true);
+
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    progressBar.style.width = percent + '%';
+                    status.innerText = `अपलोड हो रहा है: ${percent}%`;
+                }
+            };
+
+            xhr.onload = async function() {
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    const videoSecureUrl = response.secure_url;
+
+                    status.innerText = "डेटाबेस में सेव हो रहा है...";
+
+                    await addDoc(collection(db, "videos"), {
+                        url: videoSecureUrl,
+                        category: category,
+                        createdAt: new Date().toISOString()
+                    });
+
+                    status.style.color = '#00e676';
+                    status.innerText = "सफलतापूर्वक अपलोड हो गया!";
+                    fileInput.value = "";
+                    uploadBtn.disabled = false;
+                    setTimeout(() => { progressBox.style.display = 'none'; }, 2000);
+                } else {
+                    throw new Error("Cloudinary upload failed: " + xhr.responseText);
+                }
+            };
+
+            xhr.onerror = function() {
+                throw new Error("नेटवर्क समस्या");
+            };
+
+            xhr.send(formData);
+
+        } catch (error) {
+            console.error(error);
+            status.style.color = '#ff4444';
+            status.innerText = "अपलोड फ़ेल हो गया: " + error.message;
+            uploadBtn.disabled = false;
+        }
+    };
+</script>
+</body>
+</html>
