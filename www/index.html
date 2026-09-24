@@ -345,7 +345,8 @@
             localStorage.setItem('download_balance', '0');
         }
 
-        const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+        // 1 ghante ka cooldown time (1 Hour = 60 * 60 * 1000 ms)
+        const ONE_HOUR_MS = 1 * 60 * 60 * 1000;
         let currentCategory = 'hanuman';
 
         window.switchCategory = function(cat, btn) {
@@ -393,11 +394,10 @@
                 return `शेष डाउनलोड: ${bal}`;
             } else if (nextAdTime > 0 && now < nextAdTime) {
                 const diff = nextAdTime - now;
-                const hrs = Math.floor(diff / (1000 * 60 * 60));
-                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                return `⏳ अनलॉक: ${hrs}h ${mins}m`;
+                const mins = Math.ceil(diff / (1000 * 60));
+                return `⏳ अनलॉक: ${mins} मिनट`;
             } else {
-                return "🎁 4 फ्री डाउनलोड पाने के लिए क्लिक करें";
+                return "🎁 3 फ्री डाउनलोड पाने के लिए क्लिक करें";
             }
         }
 
@@ -486,12 +486,11 @@
 
                 if (nextAdAvailableTime > 0 && currentTime < nextAdAvailableTime) {
                     const remainingMs = nextAdAvailableTime - currentTime;
-                    const remHours = Math.floor(remainingMs / (1000 * 60 * 60));
-                    const remMinutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+                    const remMinutes = Math.ceil(remainingMs / (1000 * 60));
 
-                    alert(`आपके 4 डाउनलोड समाप्त हो चुके हैं!\nअगले 4 डाउनलोड के लिए विज्ञापन अनलॉक होने में समय बाकी है:\n⏳ ${remHours} घंटे ${remMinutes} मिनट।`);
+                    alert(`आपके 3 डाउनलोड समाप्त हो चुके हैं!\nअगले 3 डाउनलोड के लिए विज्ञापन अनलॉक होने में समय बाकी है:\n⏳ ${remMinutes} मिनट।`);
                 } else {
-                    const watch = confirm("4 फ्री डाउनलोड अनलॉक करने के लिए एक छोटा विज्ञापन देखें?");
+                    const watch = confirm("3 फ्री डाउनलोड अनलॉक करने के लिए एक छोटा विज्ञापन देखें?");
                     if (watch) {
                         triggerAdMobRewardedAd(url);
                     }
@@ -517,19 +516,20 @@
                     alert("विज्ञापन लोड नहीं हो सका। कृपया नेटवर्क चेक करें।");
                 }
             } else {
-                alert("विज्ञापन पूरा हुआ! 4 डाउनलोड अनलॉक हो गए।");
+                alert("विज्ञापन पूरा हुआ! 3 डाउनलोड अनलॉक हो गए।");
                 unlockDownloads(videoUrl);
             }
         }
 
         function unlockDownloads(videoUrl) {
-            localStorage.setItem('download_balance', '3');
-            const nextTime = Date.now() + SIX_HOURS_MS;
+            // 1 current video download + 2 balance me = Total 3 downloads
+            localStorage.setItem('download_balance', '2');
+            const nextTime = Date.now() + ONE_HOUR_MS;
             localStorage.setItem('next_ad_time', nextTime.toString());
 
             updateBadgeUI();
             startFileDownload(videoUrl);
-            alert("बधाई हो! आपको 4 डाउनलोड अनलॉक हो गए हैं। यह वीडियो डाउनलोड हो रहा है और 3 डाउनलोड शेष हैं।");
+            alert("बधाई हो! आपको 3 डाउनलोड अनलॉक हो गए हैं। यह वीडियो डाउनलोड हो रहा है और 2 डाउनलोड शेष हैं।");
         }
 
         function startFileDownload(url) {
