@@ -32,7 +32,8 @@ jobs:
     - name: Build Web Assets & Sync Capacitor
       run: |
         npm run build --if-present
-        npx cap add android || true
+        rm -rf android
+        npx cap add android
         npx cap sync android
 
     - name: Build Android Bundle (AAB)
@@ -44,9 +45,7 @@ jobs:
     - name: Sign Android App Bundle
       run: |
         cd android
-        # Keystore बनाएँ
         keytool -genkey -v -keystore release.jks -alias bhakti_alias -keyalg RSA -keysize 2048 -validity 10000 -storepass bhakti123 -keypass bhakti123 -dname "CN=BhaktiReels, OU=App, O=Jagatpal, L=Lucknow, ST=UP, C=IN"
-        # Bundle साइन करें
         jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore release.jks -storepass bhakti123 -keypass bhakti123 app/build/outputs/bundle/release/app-release.aab bhakti_alias
 
     - name: Upload Signed AAB Artifact
