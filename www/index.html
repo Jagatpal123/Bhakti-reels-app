@@ -346,21 +346,18 @@
         </div>
     </div>
 
-    <!-- Regular Script for Splash & Back Handler (Guaranteed Execution) -->
+    <!-- Splash Screen & Back Button Fallback Controls -->
     <script>
-        // 1. Splash Screen Auto Hide (Guaranteed after 2.2 seconds)
-        function hideSplashScreen() {
+        setTimeout(function() {
             var splash = document.getElementById('splashScreen');
-            if (splash && splash.style.display !== 'none') {
+            if (splash) {
                 splash.style.opacity = '0';
                 setTimeout(function() {
                     splash.style.display = 'none';
                 }, 600);
             }
-        }
-        setTimeout(hideSplashScreen, 2200);
+        }, 2200);
 
-        // 2. Modal Functions
         function showExitModal() {
             var modal = document.getElementById('exitModalOverlay');
             if (modal) modal.style.display = 'flex';
@@ -374,37 +371,23 @@
                 window.Capacitor.Plugins.App.exitApp();
             } else if (navigator.app && navigator.app.exitApp) {
                 navigator.app.exitApp();
+            } else {
+                window.close();
             }
         }
 
-        // 3. Android Back Button Interceptor
-        function registerBackButton() {
-            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-                window.Capacitor.Plugins.App.addListener('backButton', function() {
-                    var modal = document.getElementById('exitModalOverlay');
-                    if (modal && modal.style.display === 'flex') {
-                        dismissExitModal();
-                    } else {
-                        showExitModal();
-                    }
-                });
+        document.addEventListener('backbutton', function(e) {
+            e.preventDefault();
+            var modal = document.getElementById('exitModalOverlay');
+            if (modal && modal.style.display === 'flex') {
+                dismissExitModal();
+            } else {
+                showExitModal();
             }
-            document.addEventListener('backbutton', function(e) {
-                e.preventDefault();
-                var modal = document.getElementById('exitModalOverlay');
-                if (modal && modal.style.display === 'flex') {
-                    dismissExitModal();
-                } else {
-                    showExitModal();
-                }
-            }, false);
-        }
-
-        // Run after Capacitor initializes
-        setTimeout(registerBackButton, 1000);
+        }, false);
     </script>
 
-    <!-- Main Firebase & AdMob Module -->
+    <!-- Main Firebase & Real AdMob Production Module -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -422,14 +405,15 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        const TEST_AD_ID = "ca-app-pub-3940256099942544/5224354917";
+        // REAL ADMOB REWARDED AD UNIT ID
+        const REAL_AD_ID = "ca-app-pub-6302105448775587/9570692629";
 
         async function initAdMob() {
             if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AdMob) {
                 try {
                     await window.Capacitor.Plugins.AdMob.initialize({
                         requestTrackingAuthorization: true,
-                        initializeForTesting: true
+                        initializeForTesting: false
                     });
                 } catch (e) {
                     console.error("AdMob Init error: ", e);
@@ -437,6 +421,18 @@
             }
         }
         initAdMob();
+
+        // Register Hardware Back Button with Capacitor App plugin
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+            window.Capacitor.Plugins.App.addListener('backButton', () => {
+                const modal = document.getElementById('exitModalOverlay');
+                if (modal && modal.style.display === 'flex') {
+                    dismissExitModal();
+                } else {
+                    showExitModal();
+                }
+            });
+        }
 
         if (localStorage.getItem('download_balance') === null) {
             localStorage.setItem('download_balance', '0');
@@ -599,8 +595,8 @@
                 const { AdMob } = window.Capacitor.Plugins;
                 try {
                     await AdMob.prepareRewardVideoAd({
-                        adId: TEST_AD_ID,
-                        isTesting: true
+                        adId: REAL_AD_ID,
+                        isTesting: false
                     });
 
                     const rewardResult = await AdMob.showRewardVideoAd();
@@ -609,7 +605,7 @@
                     }
                 } catch (e) {
                     console.error("Ad playback error: ", e);
-                    alert("विज्ञापन लोड नहीं हो सका। कृपया नेटवर्क चेक करें।");
+                    alert("विज्ञापन लोड नहीं हो सका। कृपया थोड़ी देर बाद प्रयास करें।");
                 }
             } else {
                 alert("विज्ञापन पूरा हुआ! 3 डाउनलोड अनलॉक हो गए।");
