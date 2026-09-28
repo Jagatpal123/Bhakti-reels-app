@@ -42,14 +42,21 @@ jobs:
         chmod +x gradlew
         ./gradlew bundleRelease
 
-    - name: Sign Android App Bundle
+    - name: Create Keystore & Export PEM Certificate
       run: |
         cd android
-        keytool -genkey -v -keystore release.jks -alias bhakti_alias -keyalg RSA -keysize 2048 -validity 10000 -storepass bhakti123 -keypass bhakti123 -dname "CN=BhaktiReels, OU=App, O=Jagatpal, L=Lucknow, ST=UP, C=IN"
-        jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore release.jks -storepass bhakti123 -keypass bhakti123 app/build/outputs/bundle/release/app-release.aab bhakti_alias
+        keytool -genkey -v -keystore upload-keystore.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000 -storepass bhakti123 -keypass bhakti123 -dname "CN=BhaktiReels, OU=App, O=Jagatpal, L=Lucknow, ST=UP, C=IN"
+        keytool -export -rfc -keystore upload-keystore.jks -alias upload -file upload_certificate.pem -storepass bhakti123
+        jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore upload-keystore.jks -storepass bhakti123 -keypass bhakti123 app/build/outputs/bundle/release/app-release.aab upload
 
-    - name: Upload Signed AAB Artifact
+    - name: Upload Signed AAB
       uses: actions/upload-artifact@v4
       with:
         name: BhaktiReels-Signed-AAB
         path: android/app/build/outputs/bundle/release/app-release.aab
+
+    - name: Upload PEM Certificate
+      uses: actions/upload-artifact@v4
+      with:
+        name: Upload-Certificate-PEM
+        path: android/upload_certificate.pem
