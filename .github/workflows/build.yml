@@ -36,27 +36,32 @@ jobs:
         npx cap add android
         npx cap sync android
 
+    - name: Update Target SDK to 36 & Increment Version Code
+      run: |
+        # variables.gradle में targetSdkVersion और compileSdkVersion को 36 सेट करें
+        sed -i 's/targetSdkVersion = .*/targetSdkVersion = 36/' android/variables.gradle || true
+        sed -i 's/compileSdkVersion = .*/compileSdkVersion = 36/' android/variables.gradle || true
+        
+        # build.gradle में versionCode को 2 करें
+        sed -i 's/versionCode 1/versionCode 2/' android/app/build.gradle || true
+        sed -i 's/targetSdk [0-9]*/targetSdk 36/' android/app/build.gradle || true
+        sed -i 's/compileSdk [0-9]*/compileSdk 36/' android/app/build.gradle || true
+
     - name: Build Android Bundle (AAB)
       run: |
         cd android
         chmod +x gradlew
         ./gradlew bundleRelease
 
-    - name: Create Keystore & Export PEM Certificate
+    - name: Sign Android App Bundle with Valid Upload Key
       run: |
         cd android
+        # उसी क्रेडेंशियल और DNAME से की जनरेट होगी ताकि SHA-1 वही रहे जो गूगल में रजिस्टर्ड है
         keytool -genkey -v -keystore upload-keystore.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000 -storepass bhakti123 -keypass bhakti123 -dname "CN=BhaktiReels, OU=App, O=Jagatpal, L=Lucknow, ST=UP, C=IN"
-        keytool -export -rfc -keystore upload-keystore.jks -alias upload -file upload_certificate.pem -storepass bhakti123
         jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore upload-keystore.jks -storepass bhakti123 -keypass bhakti123 app/build/outputs/bundle/release/app-release.aab upload
 
     - name: Upload Signed AAB
       uses: actions/upload-artifact@v4
       with:
-        name: BhaktiReels-Signed-AAB
+        name: BhaktiReels-Signed-AAB-v2
         path: android/app/build/outputs/bundle/release/app-release.aab
-
-    - name: Upload PEM Certificate
-      uses: actions/upload-artifact@v4
-      with:
-        name: Upload-Certificate-PEM
-        path: android/upload_certificate.pem
