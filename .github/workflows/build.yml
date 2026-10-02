@@ -36,15 +36,16 @@ jobs:
         npx cap add android
         npx cap sync android
 
-    - name: Set Target SDK 36, Min SDK 24 & Version Code 3
+    - name: Configure SDK Versions and Version Code
       run: |
-        # Version code को 3 और Version Name को 1.0.2 करें
-        sed -i 's/versionCode 1/versionCode 3/g' android/app/build.gradle
-        sed -i 's/versionName "1.0"/versionName "1.0.2"/g' android/app/build.gradle
-        
-        # minSdkVersion को 24 और targetSdkVersion को 36 सेट करें
-        sed -i 's/minSdkVersion project.hasProperty.*rootProject.ext.minSdkVersion : [0-9]*/minSdkVersion 24/g' android/app/build.gradle
-        sed -i 's/targetSdkVersion project.hasProperty.*rootProject.ext.targetSdkVersion : [0-9]*/targetSdkVersion 36/g' android/app/build.gradle
+        # variables.gradle में minSdkVersion 24 और targetSdkVersion 36 सेट करें
+        sed -i 's/minSdkVersion = .*/minSdkVersion = 24/' android/variables.gradle
+        sed -i 's/compileSdkVersion = .*/compileSdkVersion = 36/' android/variables.gradle
+        sed -i 's/targetSdkVersion = .*/targetSdkVersion = 36/' android/variables.gradle
+
+        # app/build.gradle में versionCode को 4 और versionName को 1.0.3 करें
+        sed -i 's/versionCode 1/versionCode 4/g' android/app/build.gradle
+        sed -i 's/versionName "1.0"/versionName "1.0.3"/g' android/app/build.gradle
 
     - name: Build Android Bundle (AAB)
       run: |
@@ -54,7 +55,6 @@ jobs:
 
     - name: Sign Android App Bundle with Saved Keystore
       run: |
-        # रूट में अपलोड की गई release.keystore से साइन करें
         jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore release.keystore -storepass Jagatpal@2026 -keypass Jagatpal@2026 android/app/build/outputs/bundle/release/app-release.aab bhakti
 
     - name: Upload Final Signed AAB
