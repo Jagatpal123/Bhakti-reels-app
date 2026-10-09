@@ -28,6 +28,7 @@ jobs:
       run: |
         npm install
         npm install @capacitor/android
+        sudo apt-get update && sudo apt-get install -y imagemagick
 
     - name: Build Web Assets & Add Android
       run: |
@@ -36,18 +37,55 @@ jobs:
         npx cap add android
         npx cap sync android
 
+    - name: Replace App Icons with Original Logo
+      run: |
+        RES_DIR="android/app/src/main/res"
+        LOGO_SRC="www/logo.png"
+
+        # Check agar logo.png maujood hai
+        if [ -f "$LOGO_SRC" ]; then
+          echo "Original logo found. Generating app icons..."
+
+          # Sabhi mipmap screen sizes ke liye ic_launcher aur round icons replace karein
+          convert "$LOGO_SRC" -resize 48x48 "$RES_DIR/mipmap-mdpi/ic_launcher.png"
+          convert "$LOGO_SRC" -resize 48x48 "$RES_DIR/mipmap-mdpi/ic_launcher_round.png"
+
+          convert "$LOGO_SRC" -resize 72x72 "$RES_DIR/mipmap-hdpi/ic_launcher.png"
+          convert "$LOGO_SRC" -resize 72x72 "$RES_DIR/mipmap-hdpi/ic_launcher_round.png"
+
+          convert "$LOGO_SRC" -resize 96x96 "$RES_DIR/mipmap-xhdpi/ic_launcher.png"
+          convert "$LOGO_SRC" -resize 96x96 "$RES_DIR/mipmap-xhdpi/ic_launcher_round.png"
+
+          convert "$LOGO_SRC" -resize 144x144 "$RES_DIR/mipmap-xxhdpi/ic_launcher.png"
+          convert "$LOGO_SRC" -resize 144x144 "$RES_DIR/mipmap-xxhdpi/ic_launcher_round.png"
+
+          convert "$LOGO_SRC" -resize 192x192 "$RES_DIR/mipmap-xxxhdpi/ic_launcher.png"
+          convert "$LOGO_SRC" -resize 192x192 "$RES_DIR/mipmap-xxxhdpi/ic_launcher_round.png"
+
+          # Android 8+ Adaptive foreground icons update karein
+          convert "$LOGO_SRC" -resize 432x432 "$RES_DIR/mipmap-xxxhdpi/ic_launcher_foreground.png"
+          [ -f "$RES_DIR/mipmap-xxhdpi/ic_launcher_foreground.png" ] && convert "$LOGO_SRC" -resize 324x324 "$RES_DIR/mipmap-xxhdpi/ic_launcher_foreground.png"
+          [ -f "$RES_DIR/mipmap-xhdpi/ic_launcher_foreground.png" ] && convert "$LOGO_SRC" -resize 216x216 "$RES_DIR/mipmap-xhdpi/ic_launcher_foreground.png"
+          [ -f "$RES_DIR/mipmap-hdpi/ic_launcher_foreground.png" ] && convert "$LOGO_SRC" -resize 162x162 "$RES_DIR/mipmap-hdpi/ic_launcher_foreground.png"
+          [ -f "$RES_DIR/mipmap-mdpi/ic_launcher_foreground.png" ] && convert "$LOGO_SRC" -resize 108x108 "$RES_DIR/mipmap-mdpi/ic_launcher_foreground.png"
+          
+          echo "Icons successfully replaced!"
+        else
+          echo "Warning: www/logo.png not found!"
+        fi
+
     - name: Configure SDK Versions, AdMob App ID and Version Code
       run: |
-        # variables.gradle में minSdkVersion 24 और targetSdkVersion 36 सेट करें
+        # variables.gradle me SDK versions set karein
         sed -i 's/minSdkVersion = .*/minSdkVersion = 24/' android/variables.gradle
         sed -i 's/compileSdkVersion = .*/compileSdkVersion = 36/' android/variables.gradle
         sed -i 's/targetSdkVersion = .*/targetSdkVersion = 36/' android/variables.gradle
 
-        # app/build.gradle में versionCode को 5 और versionName को 1.0.4 करें
-        sed -i 's/versionCode 1/versionCode 5/g' android/app/build.gradle
-        sed -i 's/versionName "1.0"/versionName "1.0.4"/g' android/app/build.gradle
+        # Play Store update ke liye versionCode 6 aur versionName 1.0.5 set karein
+        sed -i 's/versionCode 1/versionCode 6/g' android/app/build.gradle
+        sed -i 's/versionName "1.0"/versionName "1.0.5"/g' android/app/build.gradle
 
-        # AndroidManifest.xml में AdMob App ID meta-data inject करें
+        # AndroidManifest.xml me AdMob App ID inject karein
         ADMOB_TAG='<meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-6302105448775587~2959860271"\/>'
         sed -i "s/<\/application>/    $ADMOB_TAG\n<\/application>/" android/app/src/main/AndroidManifest.xml
 
