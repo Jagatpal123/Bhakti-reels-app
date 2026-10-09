@@ -1,4 +1,4 @@
-name: Build Signed AAB
+name: Build Signed AAB and APK
 
 on:
   push:
@@ -42,11 +42,9 @@ jobs:
         RES_DIR="android/app/src/main/res"
         LOGO_SRC="www/logo.png"
 
-        # Check agar logo.png maujood hai
         if [ -f "$LOGO_SRC" ]; then
           echo "Original logo found. Generating app icons..."
 
-          # Sabhi mipmap screen sizes ke liye ic_launcher aur round icons replace karein
           convert "$LOGO_SRC" -resize 48x48 "$RES_DIR/mipmap-mdpi/ic_launcher.png"
           convert "$LOGO_SRC" -resize 48x48 "$RES_DIR/mipmap-mdpi/ic_launcher_round.png"
 
@@ -62,7 +60,6 @@ jobs:
           convert "$LOGO_SRC" -resize 192x192 "$RES_DIR/mipmap-xxxhdpi/ic_launcher.png"
           convert "$LOGO_SRC" -resize 192x192 "$RES_DIR/mipmap-xxxhdpi/ic_launcher_round.png"
 
-          # Android 8+ Adaptive foreground icons update karein
           convert "$LOGO_SRC" -resize 432x432 "$RES_DIR/mipmap-xxxhdpi/ic_launcher_foreground.png"
           [ -f "$RES_DIR/mipmap-xxhdpi/ic_launcher_foreground.png" ] && convert "$LOGO_SRC" -resize 324x324 "$RES_DIR/mipmap-xxhdpi/ic_launcher_foreground.png"
           [ -f "$RES_DIR/mipmap-xhdpi/ic_launcher_foreground.png" ] && convert "$LOGO_SRC" -resize 216x216 "$RES_DIR/mipmap-xhdpi/ic_launcher_foreground.png"
@@ -76,31 +73,39 @@ jobs:
 
     - name: Configure SDK Versions, AdMob App ID and Version Code
       run: |
-        # variables.gradle me SDK versions set karein
         sed -i 's/minSdkVersion = .*/minSdkVersion = 24/' android/variables.gradle
         sed -i 's/compileSdkVersion = .*/compileSdkVersion = 36/' android/variables.gradle
         sed -i 's/targetSdkVersion = .*/targetSdkVersion = 36/' android/variables.gradle
 
-        # Play Store update ke liye versionCode 6 aur versionName 1.0.5 set karein
         sed -i 's/versionCode 1/versionCode 6/g' android/app/build.gradle
         sed -i 's/versionName "1.0"/versionName "1.0.5"/g' android/app/build.gradle
 
-        # AndroidManifest.xml me AdMob App ID inject karein
         ADMOB_TAG='<meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-6302105448775587~2959860271"\/>'
         sed -i "s/<\/application>/    $ADMOB_TAG\n<\/application>/" android/app/src/main/AndroidManifest.xml
 
-    - name: Build Android Bundle (AAB)
+    - name: Build Android Bundle (AAB) & APK
       run: |
         cd android
         chmod +x gradlew
-        ./gradlew bundleRelease
+        ./gradlew bundleRelease assembleRelease
 
-    - name: Sign Android App Bundle with Saved Keystore
+    - name: Sign Android App Bundle (AAB)
       run: |
         jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore release.keystore -storepass Jagatpal@2026 -keypass Jagatpal@2026 android/app/build/outputs/bundle/release/app-release.aab bhakti
+
+    - name: Sign Android APK
+      run: |
+        jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore release.keystore -storepass Jagatpal@2026 -keypass Jagatpal@2026 android/app/build/outputs/apk/release/app-release-unsigned.apk bhakti
+        mv android/app/build/outputs/apk/release/app-release-unsigned.apk android/app/build/outputs/apk/release/BhaktiReels-Signed.apk
 
     - name: Upload Final Signed AAB
       uses: actions/upload-artifact@v4
       with:
         name: BhaktiReels-Final-AAB
         path: android/app/build/outputs/bundle/release/app-release.aab
+
+    - name: Upload Final Signed APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: BhaktiReels-Final-APK
+        path: android/app/build/outputs/apk/release/BhaktiReels-Signed.apk
