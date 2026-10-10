@@ -95,8 +95,9 @@ jobs:
 
     - name: Sign Android APK
       run: |
-        jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore release.keystore -storepass Jagatpal@2026 -keypass Jagatpal@2026 android/app/build/outputs/apk/release/app-release-unsigned.apk bhakti
-        mv android/app/build/outputs/apk/release/app-release-unsigned.apk android/app/build/outputs/apk/release/BhaktiReels-Signed.apk
+        BUILD_TOOLS_DIR=$(find /usr/local/lib/android/sdk/build-tools/ -maxdepth 1 -mindepth 1 | sort -V | tail -n 1)
+        $BUILD_TOOLS_DIR/zipalign -v -p 4 android/app/build/outputs/apk/release/app-release-unsigned.apk android/app/build/outputs/apk/release/aligned.apk
+        $BUILD_TOOLS_DIR/apksigner sign --ks release.keystore --ks-pass pass:Jagatpal@2026 --key-pass pass:Jagatpal@2026 --ks-key-alias bhakti --out android/app/build/outputs/apk/release/BhaktiReels-Signed.apk android/app/build/outputs/apk/release/aligned.apk
 
     - name: Upload Final Signed AAB
       uses: actions/upload-artifact@v4
